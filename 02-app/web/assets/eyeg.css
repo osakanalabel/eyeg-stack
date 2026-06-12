@@ -644,6 +644,20 @@ body {
   -webkit-appearance: none;
   appearance: none;
   font-size: 15px;
+  /* 左に虫眼鏡の透かし。検索欄だと一目で分かるように */
+  padding-left: 42px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.45' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left var(--eyeg-space-md) center;
+  background-size: 18px;
+}
+/* フォーカス時も透かしを保持（.eyeg-input:focus の background ショートハンドが
+ * background-image/position/size をリセットするため、まとめて再指定する） */
+.check-filter:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left var(--eyeg-space-md) center;
+  background-size: 18px;
 }
 .check-filter::-webkit-search-cancel-button { -webkit-appearance: none; }
 
