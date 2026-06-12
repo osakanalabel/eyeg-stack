@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B6985" />
+  <title>EyeG-Stack Check</title>
+
+  <style>
+    /*
+     * EyeG 共通スタイル基盤（push.html より移植・統一）
+     * モック単体で自己完結させるため <style> に取り込む。
+     * カラートークンは Push 画面と同一（青緑・仮）。
+     */
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&display=swap');
+
+    :root {
+      /* EyeG-Stack 独自カラー（仮・青緑系／Push 画面と同一） */
+      --eyeg-bg-light: #0B6985;
+      --eyeg-bg-dark: #053848;
+      --eyeg-accent-light: #84D2E6;
+      --eyeg-accent-mid: #1F9CC4;
+      --eyeg-accent-dark: #136080;
+
+      /* 余白・サイズ基準（シリーズ共通・上書き禁止） */
+      --eyeg-radius: 16px;
+      --eyeg-radius-lg: 24px;
+      --eyeg-tap: 44px;
+      --eyeg-space-xs: 4px;
+      --eyeg-space-sm: 8px;
+      --eyeg-space-md: 16px;
+      --eyeg-space-lg: 24px;
+      --eyeg-space-xl: 40px;
+
+      --eyeg-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+      --eyeg-dur: 180ms;
+
+      /* danger（削除）色 */
+      --eyeg-danger: #d9534f;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; min-height: 100dvh; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      font-weight: 300;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--eyeg-accent-light);
+      background: linear-gradient(180deg, var(--eyeg-bg-light) 0%, var(--eyeg-bg-dark) 100%);
+      background-attachment: fixed;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* レイアウト骨格（シリーズ共通） */
+    .eyeg-app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--eyeg-space-md) var(--eyeg-space-md) var(--eyeg-space-lg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      gap: var(--eyeg-space-sm);
+    }
+
+    .eyeg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--eyeg-space-md);
+    }
+
+    .eyeg-title {
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.3px;
+      color: var(--eyeg-accent-light);
+      margin: 0;
+    }
+
+    .eyeg-subtitle {
+      font-weight: 300;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--eyeg-accent-mid);
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    .eyeg-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-md);
+    }
+
+    /* ボタン */
+    .eyeg-button {
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 1px;
+      min-height: var(--eyeg-tap);
+      padding: 0 var(--eyeg-space-lg);
+      border-radius: var(--eyeg-radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform var(--eyeg-dur) var(--eyeg-ease),
+                  background-color var(--eyeg-dur) var(--eyeg-ease),
+                  opacity var(--eyeg-dur) var(--eyeg-ease);
+    }
+
+    .eyeg-button:active:not(:disabled) { transform: scale(0.97); }
+    .eyeg-button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .eyeg-button--primary {
+      background: var(--eyeg-accent-mid);
+      color: #fff;
+    }
+    .eyeg-button--primary:hover:not(:disabled) {
+      background: var(--eyeg-accent-light);
+      color: var(--eyeg-bg-dark);
+    }
+
+    .eyeg-button--ghost {
+      background: transparent;
+      color: var(--eyeg-accent-mid);
+      border-color: var(--eyeg-accent-dark);
+    }
+    .eyeg-button--ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--eyeg-accent-light);
+    }
+
+    .eyeg-button--danger {
+      background: transparent;
+      color: var(--eyeg-danger);
+      border-color: var(--eyeg-danger);
+    }
+    .eyeg-button--danger:hover:not(:disabled) {
+      background: var(--eyeg-danger);
+      color: #fff;
+    }
+
+    /* アバター（ダミー） */
+    .eyeg-avatar {
+      width: var(--eyeg-tap);
+      height: var(--eyeg-tap);
+      min-width: var(--eyeg-tap);
+      border-radius: 50%;
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--eyeg-accent-dark);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--eyeg-accent-light);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      transition: border-color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .eyeg-avatar:hover { border-color: var(--eyeg-accent-mid); }
+
+    /* モーダル（confirm / 詳細。push.html より移植） */
+    .eyeg-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 100;
+      padding: var(--eyeg-space-md);
+    }
+
+    @media (min-width: 600px) {
+      .eyeg-modal-backdrop { align-items: center; }
+    }
+
+    .eyeg-modal {
+      width: 100%;
+      max-width: 480px;
+      max-height: 80dvh;
+      background: var(--eyeg-bg-dark);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .eyeg-modal__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      border-bottom: 1px solid var(--eyeg-accent-dark);
+    }
+
+    .eyeg-modal__title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: var(--eyeg-accent-light);
+      margin: 0;
+    }
+
+    .eyeg-modal__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-md);
+    }
+
+    .eyeg-modal__footer {
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      border-top: 1px solid var(--eyeg-accent-dark);
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-sm);
+    }
+
+    /* Confirm モーダル固有（本文1段 + 横並び2ボタン） */
+    .eyeg-confirm__body { gap: var(--eyeg-space-sm); }
+
+    .eyeg-confirm__message {
+      font-size: 14px;
+      color: var(--eyeg-accent-light);
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .eyeg-confirm__footer {
+      flex-direction: row;
+      justify-content: flex-end;
+      gap: var(--eyeg-space-sm);
+    }
+    .eyeg-confirm__footer .eyeg-button { flex: 1; }
+
+    @media (min-width: 600px) {
+      .eyeg-confirm__footer .eyeg-button {
+        flex: 0 0 auto;
+        min-width: 120px;
+      }
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--eyeg-accent-light);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    /* ヘッダー右側のアクション群（メニュー / Push / アバター） */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--eyeg-space-sm);
+    }
+
+    /* 丸ピル型ナビボタン（push.html の .menu-back を流用） */
+    .menu-back {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      min-height: 32px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--eyeg-accent-mid);
+      border: 1px solid var(--eyeg-accent-dark);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .menu-back:hover {
+      color: var(--eyeg-accent-light);
+      border-color: var(--eyeg-accent-mid);
+    }
+    .menu-back--icon {
+      padding: 6px;
+      width: 32px;
+    }
+    .menu-back--sibling {
+      text-transform: none;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* バージョン表記（タイトル右に小さく添える） */
+    .app-version {
+      margin-left: var(--eyeg-space-sm);
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      color: var(--eyeg-accent-light);
+      opacity: 0.75;
+      vertical-align: middle;
+    }
+
+    /* ============================================================
+     * EyeG-Stack Check 画面 固有スタイル
+     * ============================================================ */
+
+    /* ソートタブ（ヘッダー直下） */
+    .sort-tabs {
+      display: flex;
+      gap: var(--eyeg-space-xs);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+      padding: var(--eyeg-space-xs);
+    }
+    .sort-tab {
+      flex: 1;
+      min-height: 36px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      color: var(--eyeg-accent-light);
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color var(--eyeg-dur) var(--eyeg-ease),
+                  color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .sort-tab[aria-selected="true"] {
+      background: var(--eyeg-accent-mid);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* メモ一覧 */
+    .memo-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-sm);
+      padding-bottom: 96px; /* FAB に被らないよう余白 */
+    }
+
+    /* カテゴリ見出し（カテゴリタブ時のグループ見出し） */
+    .cat-heading {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--eyeg-accent-mid);
+      margin: var(--eyeg-space-sm) 0 var(--eyeg-space-xs);
+      padding-left: var(--eyeg-space-xs);
+    }
+    .cat-heading:first-child { margin-top: 0; }
+
+    /* メモカード */
+    .memo-card {
+      position: relative;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--eyeg-accent-light);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+      padding: var(--eyeg-space-md);
+      min-height: var(--eyeg-tap);
+      cursor: pointer;
+      transition: transform var(--eyeg-dur) var(--eyeg-ease),
+                  background-color var(--eyeg-dur) var(--eyeg-ease),
+                  border-color var(--eyeg-dur) var(--eyeg-ease),
+                  box-shadow var(--eyeg-dur) var(--eyeg-ease),
+                  opacity var(--eyeg-dur) var(--eyeg-ease);
+      touch-action: pan-y;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    /* 浮いている間はスクロールを止め、ドラッグに専念させる */
+    .memo-card.is-lifted { touch-action: none; }
+    .memo-card:hover {
+      border-color: var(--eyeg-accent-mid);
+      background: rgba(255, 255, 255, 0.07);
+    }
+    .memo-card:active { transform: scale(0.995); }
+
+    /* メモ文：3行で省略 */
+    .memo-card__body {
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* 長押し→ドラッグ中の「浮いた」状態 */
+    .memo-card.is-lifted {
+      opacity: 0.8;
+      transform: scale(1.03);
+      border-color: var(--eyeg-accent-mid);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      cursor: grabbing;
+      z-index: 5;
+      transition: opacity var(--eyeg-dur) var(--eyeg-ease),
+                  box-shadow var(--eyeg-dur) var(--eyeg-ease);
+    }
+    /* ドラッグ中、他カードがスライドして隙間を作る挙動の土台 */
+    .memo-card.is-shifting {
+      transition: transform var(--eyeg-dur) var(--eyeg-ease);
+    }
+
+    /* 長押しガイド（一覧上部の小さなヒント） */
+    .list-hint {
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: var(--eyeg-accent-mid);
+      opacity: 0.8;
+      padding-left: var(--eyeg-space-xs);
+      margin: 0 0 calc(-1 * var(--eyeg-space-xs));
+    }
+
+    /* 詳細モーダル：下からスライドアップ */
+    .detail-modal {
+      max-height: 88dvh;
+    }
+    .detail-modal__meta {
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-sm);
+      font-size: 14px;
+    }
+    .meta-row {
+      display: flex;
+      gap: var(--eyeg-space-md);
+      align-items: baseline;
+    }
+    .meta-row__label {
+      flex: 0 0 72px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--eyeg-accent-dark);
+    }
+    .meta-row__value { color: var(--eyeg-accent-light); }
+
+    .detail-modal__bodytext {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--eyeg-accent-light);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+    }
+
+    .detail-stars { color: var(--eyeg-accent-light); letter-spacing: 2px; }
+    .detail-stars__off { color: var(--eyeg-accent-dark); }
+
+    /* 写真スロット（ダミー） */
+    .detail-photos {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--eyeg-space-sm);
+    }
+    .detail-photo {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--eyeg-accent-dark);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+    }
+
+    /* 詳細モーダルのフッター：
+     * 編集・削除は小さなアイコンボタン（左）、閉じるは大きく右手で押しやすい右側。 */
+    .detail-modal__footer {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--eyeg-space-sm);
+    }
+    /* 主要アクション：閉じる（大・右側） */
+    .detail-modal__footer .footer-close {
+      flex: 1;
+      order: 2;            /* 右端に配置 */
+      min-height: 52px;    /* 親指で押しやすい大きめサイズ */
+      font-size: 17px;
+    }
+    /* 補助アクション：編集 / 削除（小・アイコンのみ・左側） */
+    .icon-btn {
+      order: 1;
+      flex: 0 0 auto;
+      width: 44px;
+      min-height: 44px;
+      height: 44px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--eyeg-radius);
+      background: transparent;
+      border: 1px solid var(--eyeg-accent-dark);
+      color: var(--eyeg-accent-mid);
+      cursor: pointer;
+      transition: background-color var(--eyeg-dur) var(--eyeg-ease),
+                  color var(--eyeg-dur) var(--eyeg-ease),
+                  border-color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .icon-btn:active { transform: scale(0.94); }
+    .icon-btn--edit:hover {
+      color: var(--eyeg-accent-light);
+      border-color: var(--eyeg-accent-mid);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* スライドアップ用アニメーション */
+    .detail-modal {
+      animation: slide-up var(--eyeg-dur) var(--eyeg-ease);
+    }
+    @keyframes slide-up {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* 右下フローティング Push ボタン（FAB） */
+    .fab {
+      position: fixed;
+      right: max(var(--eyeg-space-lg), env(safe-area-inset-right));
+      bottom: calc(var(--eyeg-space-lg) + env(safe-area-inset-bottom));
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: var(--eyeg-accent-mid);
+      color: #fff;
+      font-size: 30px;
+      font-weight: 300;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 30;
+      transition: transform var(--eyeg-dur) var(--eyeg-ease),
+                  background-color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .fab:hover { background: var(--eyeg-accent-light); color: var(--eyeg-bg-dark); }
+    .fab:active { transform: scale(0.92); }
+
+    /* 空状態 */
+    .empty-state {
+      text-align: center;
+      padding: var(--eyeg-space-xl) var(--eyeg-space-md);
+      color: var(--eyeg-accent-dark);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="eyeg-app check-app">
+    <!-- ヘッダー（Push 画面と同じ構造） -->
+    <header class="eyeg-header">
+      <div>
+        <h1 class="eyeg-title">EyeG-Stack<span class="app-version">v0.1.0</span></h1>
+        <p class="eyeg-subtitle">Check</p>
+      </div>
+      <div class="header-actions">
+        <a
+          class="menu-back menu-back--icon"
+          href="index.html"
+          aria-label="EyeG-Stack メニューへ戻る"
+          title="EyeG-Stack メニューへ戻る"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </a>
+        <a
+          class="menu-back menu-back--sibling"
+          href="push.html"
+          aria-label="Push へ"
+          title="Push へ"
+        >Push</a>
+        <button class="eyeg-avatar" type="button" aria-label="アカウント">ES</button>
+      </div>
+    </header>
+
+    <!-- ソートタブ -->
+    <div class="sort-tabs" role="tablist" aria-label="並び替え">
+      <button class="sort-tab" role="tab" data-sort="recommended" aria-selected="true">おすすめ</button>
+      <button class="sort-tab" role="tab" data-sort="newest" aria-selected="false">新しい順</button>
+      <button class="sort-tab" role="tab" data-sort="category" aria-selected="false">カテゴリ</button>
+    </div>
+
+    <!-- メモ一覧 -->
+    <main class="eyeg-main">
+      <p class="list-hint" id="list-hint">カードをタップで詳細・長押しで並べ替え</p>
+      <div class="memo-list" id="memo-list" role="list"></div>
+    </main>
+  </div>
+
+  <!-- 右下フローティング Push ボタン -->
+  <a class="fab" href="push.html" aria-label="Push（メモを追加）" title="Push">＋</a>
+
+  <script>
+    // === ダミーデータ ===
+    // 指示書のサンプルを基に、手動順位カウント（manual_up_count /
+    // manual_down_count）と簡易重みづけ用フィールドを足して 6 件用意。
+    const CATEGORY_LABELS = { personal: '私用', work: '仕事用', general: '一般' };
+
+    const dummyMemos = [
+      { id: 1, body: '牛乳と卵を買う', category: 'personal', importance: null, due_at: null, created_at: '2026-06-09T08:00:00', view_count: 2, manual_up_count: 0, manual_down_count: 0 },
+      { id: 2, body: '週次レポートを金曜までに提出する。先方フォーマット確認のうえ、数値は最新の集計を反映すること。', category: 'work', importance: 4, due_at: '2026-06-13', created_at: '2026-06-08T10:30:00', view_count: 5, manual_up_count: 0, manual_down_count: 0 },
+      { id: 3, body: 'Next.js の App Router について調べる', category: 'general', importance: 2, due_at: null, created_at: '2026-06-07T21:00:00', view_count: 1, manual_up_count: 0, manual_down_count: 0 },
+      { id: 4, body: '歯医者の予約を入れる', category: 'personal', importance: 3, due_at: '2026-06-15', created_at: '2026-06-06T09:00:00', view_count: 0, manual_up_count: 0, manual_down_count: 0 },
+      { id: 5, body: 'チームに設計方針の共有をする', category: 'work', importance: 5, due_at: '2026-06-10', created_at: '2026-06-09T11:00:00', view_count: 3, manual_up_count: 0, manual_down_count: 0 },
+      { id: 6, body: '週末に読む本のリストを整理する', category: 'general', importance: null, due_at: null, created_at: '2026-06-05T19:00:00', view_count: 4, manual_up_count: 0, manual_down_count: 0 },
+    ];
+
+    let currentSort = 'recommended';
+
+    // === 簡易重みづけ（モック用） ===
+    // 本実装の weight 算出（カテゴリ×時間帯／重要度／期限近接／view_count／鮮度）は
+    // サーバ側想定。モックでは importance を主軸に、手動操作分を加減して並べる。
+    function weightOf(m) {
+      const importanceScore = (m.importance ?? 0) * 10;
+      const manualScore = (m.manual_up_count - m.manual_down_count) * 5;
+      const viewScore = m.view_count; // 微小な味付け
+      return importanceScore + manualScore + viewScore;
+    }
+
+    function sortedMemos(sort) {
+      const arr = [...dummyMemos];
+      if (sort === 'recommended') {
+        return arr.sort((a, b) => weightOf(b) - weightOf(a));
+      }
+      if (sort === 'newest') {
+        return arr.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      }
+      // category: 一般 → 仕事用 → 私用 の順でグループ表示
+      const order = { general: 0, work: 1, personal: 2 };
+      return arr.sort((a, b) =>
+        order[a.category] - order[b.category] ||
+        b.created_at.localeCompare(a.created_at)
+      );
+    }
+
+    // === 一覧描画 ===
+    const listEl = document.getElementById('memo-list');
+    const hintEl = document.getElementById('list-hint');
+
+    function makeCard(memo) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'memo-card';
+      card.setAttribute('role', 'listitem');
+      card.dataset.id = String(memo.id);
+      const p = document.createElement('p');
+      p.className = 'memo-card__body';
+      p.textContent = memo.body;
+      card.appendChild(p);
+      attachCardInteractions(card, memo);
+      return card;
+    }
+
+    function render() {
+      listEl.innerHTML = '';
+      const memos = sortedMemos(currentSort);
+
+      if (currentSort === 'category') {
+        // カテゴリ見出しでグループ化。長押し並べ替えはおすすめ時のみ有効なので
+        // ヒント表示も切り替える。
+        hintEl.textContent = 'カードをタップで詳細';
+        let lastCat = null;
+        memos.forEach((memo) => {
+          if (memo.category !== lastCat) {
+            const h = document.createElement('div');
+            h.className = 'cat-heading';
+            h.textContent = CATEGORY_LABELS[memo.category];
+            listEl.appendChild(h);
+            lastCat = memo.category;
+          }
+          listEl.appendChild(makeCard(memo));
+        });
+      } else {
+        hintEl.textContent = currentSort === 'recommended'
+          ? 'カードをタップで詳細・長押しで並べ替え'
+          : 'カードをタップで詳細';
+        memos.forEach((memo) => listEl.appendChild(makeCard(memo)));
+      }
+
+      if (!memos.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'メモはまだありません';
+        listEl.appendChild(empty);
+      }
+    }
+
+    // === ソートタブ ===
+    document.querySelectorAll('.sort-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.sort-tab').forEach((t) =>
+          t.setAttribute('aria-selected', String(t === tab)));
+        currentSort = tab.dataset.sort;
+        render();
+      });
+    });
+
+    // ============================================================
+    // 詳細モーダル
+    // ============================================================
+    function fmtDateTime(iso) {
+      // 2026-06-09T08:00:00 → 2026/06/09 08:00（簡易整形）
+      const [d, t] = iso.split('T');
+      const [y, mo, day] = d.split('-');
+      const hm = (t || '').slice(0, 5);
+      return `${y}/${mo}/${day}${hm ? ' ' + hm : ''}`;
+    }
+    function fmtDate(iso) {
+      if (!iso) return null;
+      const [y, mo, day] = iso.split('-');
+      return `${y}/${mo}/${day}`;
+    }
+    function starsHTML(n) {
+      if (!n) return null;
+      const on = '★'.repeat(n);
+      const off = '★'.repeat(5 - n);
+      return `<span class="detail-stars">${on}<span class="detail-stars__off">${off}</span></span>`;
+    }
+
+    function openDetail(memo) {
+      // モックでは閲覧でカウントを増やす想定を簡易反映
+      memo.view_count += 1;
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'eyeg-modal-backdrop';
+      backdrop.setAttribute('role', 'dialog');
+      backdrop.setAttribute('aria-modal', 'true');
+
+      const metaRows = [];
+      metaRows.push(rowHTML('カテゴリ', CATEGORY_LABELS[memo.category]));
+      const stars = starsHTML(memo.importance);
+      if (stars) metaRows.push(rowHTML('重要度', stars, true));
+      const due = fmtDate(memo.due_at);
+      if (due) metaRows.push(rowHTML('期限', due));
+      metaRows.push(rowHTML('作成日時', fmtDateTime(memo.created_at)));
+
+      backdrop.innerHTML = `
+        <div class="eyeg-modal detail-modal">
+          <div class="eyeg-modal__header">
+            <h2 class="eyeg-modal__title">メモ詳細</h2>
+          </div>
+          <div class="eyeg-modal__body">
+            <p class="detail-modal__bodytext"></p>
+            <div class="detail-modal__meta">${metaRows.join('')}</div>
+            <div>
+              <div class="meta-row"><span class="meta-row__label">写真</span></div>
+              <div class="detail-photos">
+                <div class="detail-photo">🖼</div>
+                <div class="detail-photo">🖼</div>
+                <div class="detail-photo">＋</div>
+                <div class="detail-photo">＋</div>
+              </div>
+            </div>
+          </div>
+          <div class="eyeg-modal__footer detail-modal__footer">
+            <button type="button" class="icon-btn icon-btn--edit" data-act="edit" aria-label="編集" title="編集">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+            </button>
+            <button type="button" class="eyeg-button eyeg-button--primary footer-close" data-act="close">閉じる</button>
+          </div>
+        </div>`;
+
+      // 本文は textContent で安全にセット（XSS 回避・改行保持）
+      backdrop.querySelector('.detail-modal__bodytext').textContent = memo.body;
+
+      function close() {
+        document.removeEventListener('keydown', onKey);
+        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+      }
+      function onKey(e) { if (e.key === 'Escape') close(); }
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+      document.addEventListener('keydown', onKey);
+
+      backdrop.querySelector('[data-act="close"]').addEventListener('click', close);
+      backdrop.querySelector('[data-act="edit"]').addEventListener('click', async () => {
+        // 編集は Push 画面を「編集モード」で再利用する方針（effect = データを変える操作は Push に集約）。
+        // 既存メモの id を渡し、Push 側でプリフィルする想定。
+        // ※ Push 側の ?id= 受け取り・プリフィルは未実装のため、モックでは遷移確認のみ。
+        const ok = await eyegConfirm({
+          title: 'このメモを編集しますか？',
+          message: 'Push 画面を編集モードで開きます（プリフィル想定）。\n※モックのため Push 側のプリフィルは未実装です。',
+          confirmLabel: '編集',
+          cancelLabel: 'キャンセル',
+        });
+        if (ok) {
+          window.location.href = `push.html?id=${memo.id}`;
+        }
+      });
+      // 削除は Check（output＝閲覧）には置かない。effect（データを変える操作）は Push 側に集約。
+      // 編集で開いた Push 画面側に持たせる方針（eyeg-cal の「遷移してから削除」と同じ作法）。
+
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('[data-act="close"]').focus();
+    }
+
+    function rowHTML(label, value, isHTML) {
+      const v = isHTML ? value : escapeHTML(value);
+      return `<div class="meta-row"><span class="meta-row__label">${label}</span><span class="meta-row__value">${v}</span></div>`;
+    }
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ============================================================
+    // カード操作：タップで詳細 / 長押し→ドラッグで並べ替え
+    // ============================================================
+    const LONG_PRESS_MS = 500;
+
+    function attachCardInteractions(card, memo) {
+      let pressTimer = null;
+      let lifted = false;
+      let startY = 0;
+      let suppressClick = false;
+      let activePointerId = null;
+
+      function reorderEnabled() {
+        // 並べ替えは「おすすめ」タブのみ（手動カウントが順位に効くため）
+        return currentSort === 'recommended';
+      }
+
+      function beginPress(clientY) {
+        startY = clientY;
+        if (!reorderEnabled()) return;
+        pressTimer = setTimeout(() => lift(), LONG_PRESS_MS);
+      }
+
+      function lift() {
+        lifted = true;
+        card.classList.add('is-lifted');
+        // ポインタをこのカードに固定し、以降の move/up を確実に受ける。
+        // これでスクロールコンテナにイベントを奪われない。
+        if (activePointerId !== null) {
+          try { card.setPointerCapture(activePointerId); } catch (e) {}
+        }
+        if (navigator.vibrate) navigator.vibrate(10);
+      }
+
+      function cardHeight() {
+        const cards = [...listEl.querySelectorAll('.memo-card')];
+        const first = cards[0];
+        const h = first ? first.getBoundingClientRect().height : 64;
+        const gap = 8; // --eyeg-space-sm
+        return h + gap;
+      }
+
+      function move(e) {
+        const clientY = e.clientY;
+        if (!lifted) {
+          // 長押し成立前に少し動いたらキャンセル（スクロール意図）
+          if (Math.abs(clientY - startY) > 10 && pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+          return;
+        }
+        // 浮いている間はブラウザのスクロールを抑止（指の上下でページが動かない）
+        e.preventDefault();
+        const dy = clientY - startY;
+        card.style.transform = `translateY(${dy}px) scale(1.03)`;
+
+        // ドラッグ量から「何段動いたか」を概算し、他カードをスライド
+        const step = cardHeight();
+        const moved = Math.round(dy / step);
+        previewShift(card, moved);
+      }
+
+      function endPress(clientY) {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (!lifted) return;
+
+        const dy = clientY - startY;
+        const step = cardHeight();
+        const moved = Math.round(dy / step); // 正=下へ / 負=上へ
+
+        if (moved < 0) {
+          memo.manual_up_count += Math.abs(moved);
+        } else if (moved > 0) {
+          memo.manual_down_count += moved;
+        }
+
+        // 後始末
+        card.style.transform = '';
+        card.classList.remove('is-lifted');
+        clearShift();
+        lifted = false;
+        suppressClick = true; // 直後の click（詳細）を抑制
+        render(); // 新しい重みで再描画
+      }
+
+      // --- Pointer Events で統一（マウス / タッチ両対応） ---
+      card.addEventListener('pointerdown', (e) => {
+        suppressClick = false;
+        activePointerId = e.pointerId;
+        beginPress(e.clientY);
+      });
+      // passive: false にしないと move 内の preventDefault が無視される
+      card.addEventListener('pointermove', move, { passive: false });
+      card.addEventListener('pointerup', (e) => {
+        endPress(e.clientY);
+        activePointerId = null;
+      });
+      card.addEventListener('pointercancel', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (lifted) {
+          card.style.transform = '';
+          card.classList.remove('is-lifted');
+          clearShift();
+          lifted = false;
+        }
+        activePointerId = null;
+      });
+
+      card.addEventListener('click', () => {
+        if (suppressClick) { suppressClick = false; return; }
+        openDetail(memo);
+      });
+    }
+
+    // ドラッグ中、対象カードが移動する分だけ他カードをスライドさせて隙間を作る
+    function previewShift(draggingCard, moved) {
+      const cards = [...listEl.querySelectorAll('.memo-card')];
+      const fromIdx = cards.indexOf(draggingCard);
+      const step = (() => {
+        const h = cards[0] ? cards[0].getBoundingClientRect().height : 64;
+        return h + 8;
+      })();
+      const toIdx = Math.max(0, Math.min(cards.length - 1, fromIdx + moved));
+
+      cards.forEach((c, i) => {
+        if (c === draggingCard) return;
+        c.classList.add('is-shifting');
+        let shift = 0;
+        if (moved < 0 && i >= toIdx && i < fromIdx) shift = step;   // 上へ割り込み → 下へ寄せる
+        if (moved > 0 && i > fromIdx && i <= toIdx) shift = -step;   // 下へ割り込み → 上へ寄せる
+        c.style.transform = shift ? `translateY(${shift}px)` : '';
+      });
+    }
+    function clearShift() {
+      listEl.querySelectorAll('.memo-card').forEach((c) => {
+        c.classList.remove('is-shifting');
+        c.style.transform = '';
+      });
+    }
+
+    // ============================================================
+    // 独自 confirm モーダル（push.html より移植）
+    // ============================================================
+    function eyegConfirm(opts) {
+      return new Promise((resolve) => {
+        const title = opts.title || '確認';
+        const message = opts.message || '';
+        const confirmLabel = opts.confirmLabel || 'OK';
+        const cancelLabel = opts.cancelLabel || 'キャンセル';
+        const danger = !!opts.danger;
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'eyeg-modal-backdrop';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+        backdrop.style.zIndex = '200'; // 詳細モーダルより前面
+
+        const modal = document.createElement('div');
+        modal.className = 'eyeg-modal eyeg-confirm';
+
+        const header = document.createElement('div');
+        header.className = 'eyeg-modal__header';
+        const h2 = document.createElement('h2');
+        h2.className = 'eyeg-modal__title';
+        h2.textContent = title;
+        header.appendChild(h2);
+
+        const body = document.createElement('div');
+        body.className = 'eyeg-modal__body eyeg-confirm__body';
+        if (message) {
+          const p = document.createElement('p');
+          p.className = 'eyeg-confirm__message';
+          p.textContent = message;
+          body.appendChild(p);
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'eyeg-modal__footer eyeg-confirm__footer';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'eyeg-button eyeg-button--ghost';
+        cancelBtn.textContent = cancelLabel;
+
+        const okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'eyeg-button ' + (danger ? 'eyeg-button--danger' : 'eyeg-button--primary');
+        okBtn.textContent = confirmLabel;
+
+        footer.appendChild(cancelBtn);
+        footer.appendChild(okBtn);
+        modal.appendChild(header);
+        modal.appendChild(body);
+        modal.appendChild(footer);
+        backdrop.appendChild(modal);
+
+        function cleanup(result) {
+          backdrop.removeEventListener('click', onBackdropClick);
+          document.removeEventListener('keydown', onKey);
+          if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+          resolve(result);
+        }
+        function onBackdropClick(e) { if (e.target === backdrop) cleanup(false); }
+        function onKey(e) {
+          if (e.key === 'Escape') cleanup(false);
+          if (e.key === 'Enter') cleanup(true);
+        }
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        okBtn.addEventListener('click', () => cleanup(true));
+        backdrop.addEventListener('click', onBackdropClick);
+        document.addEventListener('keydown', onKey);
+
+        document.body.appendChild(backdrop);
+        okBtn.focus();
+      });
+    }
+
+    // 初期描画
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "eyeg-stack-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["02-app/api/src/dev.js"],
+      "port": 3456
+    }
+  ]
+}

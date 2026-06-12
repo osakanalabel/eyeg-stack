@@ -1,0 +1,10 @@
+node_modules/
+.env
+00-docs/smtp_apikey.txt
+
+# README は GitHub にアップロードしない（かきざきさん指示 2026-06-12）
+README.md
+README.pdf
+
+# ローカル設定
+.claude/settings.local.json

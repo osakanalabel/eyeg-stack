@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B846A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="EyeG-Stack" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>EyeG-Stack Check</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="assets/eyeg.css" />
+</head>
+<body class="theme-check">
+  <div class="eyeg-app check-app">
+    <!-- ヘッダー（Push 画面と同じ構造） -->
+    <header class="eyeg-header">
+      <div>
+        <h1 class="eyeg-title">EyeG-Stack<span class="app-version">v0.1.2</span></h1>
+        <p class="eyeg-subtitle">Check</p>
+      </div>
+      <div class="header-actions">
+        <a class="menu-back menu-back--icon" href="index.html"
+           aria-label="EyeG-Stack メニューへ戻る" title="EyeG-Stack メニューへ戻る">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </a>
+        <a class="menu-back menu-back--sibling" href="push.html" aria-label="Push へ" title="Push へ">Push</a>
+        <button class="eyeg-avatar" type="button" aria-label="ログアウト" title="ログアウト">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ソートタブ -->
+    <div class="sort-tabs" role="tablist" aria-label="並び替え">
+      <button class="sort-tab" role="tab" data-sort="recommended" aria-selected="true">おすすめ</button>
+      <button class="sort-tab" role="tab" data-sort="newest" aria-selected="false">新しい順</button>
+      <button class="sort-tab" role="tab" data-sort="category" aria-selected="false">カテゴリ</button>
+    </div>
+
+    <!-- メモ一覧 -->
+    <main class="eyeg-main">
+      <input type="search" id="filter-input" class="eyeg-input check-filter"
+             placeholder="絞り込み…" autocomplete="off" aria-label="メモを絞り込み" />
+      <p class="list-hint" id="list-hint">カードをタップで詳細・長押しで並べ替え</p>
+      <div class="memo-list" id="memo-list" role="list"></div>
+    </main>
+  </div>
+
+  <!-- 右下フローティング Push ボタン -->
+  <a class="fab" href="push.html" aria-label="Push（メモを追加）" title="Push">＋</a>
+
+  <script src="assets/app.js"></script>
+  <script>
+    const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    let labels = { ...DEFAULT_LABELS };
+    let currentSort = 'recommended';
+    let memos = [];
+    let filterText = '';
+
+    // === 一覧取得 ===
+    async function fetchMemos() {
+      const params = new URLSearchParams({ view: currentSort });
+      if (currentSort === 'recommended') params.set('tz', TZ);
+      const data = await api(`/api/memos?${params}`);
+      memos = data.memos;
+    }
+
+    // === 一覧描画 ===
+    const listEl = document.getElementById('memo-list');
+    const hintEl = document.getElementById('list-hint');
+
+    function makeCard(memo) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'memo-card';
+      card.setAttribute('role', 'listitem');
+      card.dataset.id = memo.id;
+      const p = document.createElement('p');
+      p.className = 'memo-card__body';
+      p.textContent = memo.body || '（本文なし）';
+      card.appendChild(p);
+      attachCardInteractions(card, memo);
+      return card;
+    }
+
+    function render() {
+      listEl.innerHTML = '';
+
+      // テキストフィルタ（本文の部分一致・大文字小文字区別なし）
+      const q = filterText.toLowerCase();
+      const visible = q ? memos.filter((m) => (m.body || '').toLowerCase().includes(q)) : memos;
+
+      if (currentSort === 'category') {
+        hintEl.textContent = 'カードをタップで詳細';
+        let lastCat = null;
+        visible.forEach((memo) => {
+          if (memo.category !== lastCat) {
+            const h = document.createElement('div');
+            h.className = 'cat-heading';
+            h.textContent = labels[memo.category];
+            listEl.appendChild(h);
+            lastCat = memo.category;
+          }
+          listEl.appendChild(makeCard(memo));
+        });
+      } else {
+        // 絞り込み中は並べ替え無効（段数が全体リストとずれるため）
+        hintEl.textContent = reorderEnabled()
+          ? 'カードをタップで詳細・長押しで並べ替え'
+          : 'カードをタップで詳細';
+        visible.forEach((memo) => listEl.appendChild(makeCard(memo)));
+      }
+
+      if (!visible.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = q
+          ? '絞り込みに一致するメモがありません'
+          : 'メモはまだありません。右下の＋から Push しましょう';
+        listEl.appendChild(empty);
+      }
+    }
+
+    // 並べ替えは「おすすめ」タブ・絞り込みなしのときだけ有効
+    function reorderEnabled() {
+      return currentSort === 'recommended' && !filterText;
+    }
+
+    // === テキストフィルタ ===
+    document.getElementById('filter-input').addEventListener('input', (e) => {
+      filterText = e.target.value.trim();
+      render();
+    });
+
+    async function refresh() {
+      try {
+        await fetchMemos();
+        render();
+      } catch (err) {
+        if (err.status !== 401) eyegAlert('読み込みエラー', err.message);
+      }
+    }
+
+    // === ソートタブ ===
+    document.querySelectorAll('.sort-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.sort-tab').forEach((t) =>
+          t.setAttribute('aria-selected', String(t === tab)));
+        currentSort = tab.dataset.sort;
+        refresh();
+      });
+    });
+
+    // ============================================================
+    // 詳細モーダル（GET /api/memos/:id が閲覧カウントを加算する）
+    // ============================================================
+    function starsHTML(n) {
+      if (!n) return null;
+      return `<span class="detail-stars">${'★'.repeat(n)}<span class="detail-stars__off">${'★'.repeat(5 - n)}</span></span>`;
+    }
+    function rowHTML(label, value, isHTML) {
+      const v = isHTML ? value : escapeHTML(value);
+      return `<div class="meta-row"><span class="meta-row__label">${label}</span><span class="meta-row__value">${v}</span></div>`;
+    }
+
+    async function openDetail(memoId) {
+      let memo;
+      try {
+        memo = (await api(`/api/memos/${memoId}`)).memo;
+      } catch (err) {
+        if (err.status !== 401) eyegAlert('読み込みエラー', err.message);
+        return;
+      }
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'eyeg-modal-backdrop';
+      backdrop.setAttribute('role', 'dialog');
+      backdrop.setAttribute('aria-modal', 'true');
+
+      const metaRows = [];
+      metaRows.push(rowHTML('カテゴリ', labels[memo.category]));
+      const stars = starsHTML(memo.importance);
+      if (stars) metaRows.push(rowHTML('重要度', stars, true));
+      const due = fmtDate(memo.due_at);
+      if (due) metaRows.push(rowHTML('期限', due));
+      metaRows.push(rowHTML('作成日時', fmtDateTime(memo.created_at)));
+
+      backdrop.innerHTML = `
+        <div class="eyeg-modal detail-modal">
+          <div class="eyeg-modal__header">
+            <h2 class="eyeg-modal__title">メモ詳細</h2>
+          </div>
+          <div class="eyeg-modal__body">
+            <p class="detail-modal__bodytext"></p>
+            <div class="detail-modal__meta">${metaRows.join('')}</div>
+            <div class="detail-photos-wrap" ${memo.photo_count ? '' : 'hidden'}>
+              <div class="meta-row"><span class="meta-row__label">写真</span></div>
+              <div class="detail-photos"></div>
+            </div>
+          </div>
+          <div class="eyeg-modal__footer detail-modal__footer">
+            <button type="button" class="icon-btn icon-btn--edit" data-act="edit" aria-label="編集" title="編集">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+            </button>
+            <button type="button" class="eyeg-button eyeg-button--primary footer-close" data-act="close">閉じる</button>
+          </div>
+        </div>`;
+
+      // 本文は textContent で安全にセット（XSS 回避・改行保持）
+      backdrop.querySelector('.detail-modal__bodytext').textContent = memo.body || '（本文なし）';
+
+      function close() {
+        document.removeEventListener('keydown', onKey);
+        backdrop.remove();
+      }
+      // ライトボックス表示中の Esc はそちらに譲る（詳細まで一気に閉じない）
+      function onKey(e) {
+        if (e.key === 'Escape' && !document.querySelector('.photo-lightbox')) close();
+      }
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+      document.addEventListener('keydown', onKey);
+
+      backdrop.querySelector('[data-act="close"]').addEventListener('click', close);
+      // 編集・削除（effect）は Push 画面（編集モード）に集約
+      backdrop.querySelector('[data-act="edit"]').addEventListener('click', () => {
+        window.location.href = `push.html?id=${memo.id}`;
+      });
+
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('[data-act="close"]').focus();
+
+      // 写真は一覧と分離した個別エンドポイントから遅延取得
+      if (memo.photo_count) {
+        api(`/api/memos/${memo.id}/photos`).then(({ photos }) => {
+          const grid = backdrop.querySelector('.detail-photos');
+          if (!grid) return;
+          photos.forEach((p) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'detail-photo detail-photo--filled';
+            btn.setAttribute('aria-label', `写真 ${p.order + 1} を拡大`);
+            const img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${p.data}`;
+            img.alt = `写真 ${p.order + 1}`;
+            btn.appendChild(img);
+            btn.addEventListener('click', () => openLightbox(img.src, img.alt));
+            grid.appendChild(btn);
+          });
+        }).catch(() => {});
+      }
+    }
+
+    // 写真の拡大表示。タップ / Esc で閉じる
+    function openLightbox(src, alt) {
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = 'photo-lightbox';
+      box.setAttribute('aria-label', `${alt}（タップで閉じる）`);
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = alt;
+      box.appendChild(img);
+
+      function close() {
+        document.removeEventListener('keydown', onKey);
+        box.remove();
+      }
+      function onKey(e) { if (e.key === 'Escape') close(); }
+      box.addEventListener('click', close);
+      document.addEventListener('keydown', onKey);
+
+      document.body.appendChild(box);
+      box.focus();
+    }
+
+    // ============================================================
+    // カード操作：タップで詳細 / 長押し→ドラッグで並べ替え（おすすめのみ）
+    // ============================================================
+    const LONG_PRESS_MS = 500;
+    let anyLifted = false;
+
+    // 浮いている間は document レベルで touchmove を止める。
+    // （ジェスチャ開始後に touch-action を変えても効かないため、ここで抑止する）
+    document.addEventListener('touchmove', (e) => {
+      if (anyLifted) e.preventDefault();
+    }, { passive: false });
+
+    function attachCardInteractions(card, memo) {
+      let pressTimer = null;
+      let lifted = false;
+      let startY = 0;
+      let suppressClick = false;
+      let activePointerId = null;
+
+      function lift() {
+        lifted = true;
+        anyLifted = true;
+        card.classList.add('is-lifted');
+        if (activePointerId !== null) {
+          try { card.setPointerCapture(activePointerId); } catch {}
+        }
+        if (navigator.vibrate) navigator.vibrate(10);
+      }
+
+      function cardStep() {
+        const first = listEl.querySelector('.memo-card');
+        return (first ? first.getBoundingClientRect().height : 64) + 8;
+      }
+
+      // 実際に移動可能な範囲（一覧の上端/下端まで）にクランプする
+      function clampMoved(moved) {
+        const cards = [...listEl.querySelectorAll('.memo-card')];
+        const idx = cards.indexOf(card);
+        return Math.max(-idx, Math.min(cards.length - 1 - idx, moved));
+      }
+
+      function move(e) {
+        if (!lifted) {
+          if (Math.abs(e.clientY - startY) > 10 && pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+          return;
+        }
+        e.preventDefault();
+        card.style.transform = `translateY(${e.clientY - startY}px) scale(1.03)`;
+        previewShift(card, clampMoved(Math.round((e.clientY - startY) / cardStep())));
+      }
+
+      async function endPress(clientY) {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (!lifted) return;
+
+        const moved = clampMoved(Math.round((clientY - startY) / cardStep()));
+
+        card.style.transform = '';
+        card.classList.remove('is-lifted');
+        clearShift();
+        lifted = false;
+        anyLifted = false;
+        suppressClick = true;
+
+        if (moved !== 0) {
+          // 指を離した位置に DOM 上でとどめる。重みづけ順での再ソートは
+          // 次にリストを読み込んだとき（操作直後に並び直すと直観に反するため）
+          const cards = [...listEl.querySelectorAll('.memo-card')];
+          const fromIdx = cards.indexOf(card);
+          const ref = cards[fromIdx + moved];
+          listEl.insertBefore(card, moved < 0 ? ref : ref.nextSibling);
+
+          try {
+            await api(`/api/memos/${memo.id}/manual`, {
+              method: 'POST',
+              body: { direction: moved < 0 ? 'up' : 'down', steps: Math.abs(moved) },
+            });
+          } catch (err) {
+            if (err.status !== 401) eyegAlert('並べ替えを保存できませんでした', err.message);
+          }
+        }
+      }
+
+      card.addEventListener('pointerdown', (e) => {
+        suppressClick = false;
+        activePointerId = e.pointerId;
+        startY = e.clientY;
+        if (reorderEnabled()) {
+          pressTimer = setTimeout(lift, LONG_PRESS_MS);
+        }
+      });
+      card.addEventListener('pointermove', move, { passive: false });
+      card.addEventListener('pointerup', (e) => {
+        endPress(e.clientY);
+        activePointerId = null;
+      });
+      card.addEventListener('pointercancel', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        if (lifted) {
+          card.style.transform = '';
+          card.classList.remove('is-lifted');
+          clearShift();
+          lifted = false;
+          anyLifted = false;
+        }
+        activePointerId = null;
+      });
+
+      card.addEventListener('click', () => {
+        if (suppressClick) { suppressClick = false; return; }
+        openDetail(memo.id);
+      });
+    }
+
+    // ドラッグ中、対象カードの移動分だけ他カードをスライドさせて隙間を作る
+    function previewShift(draggingCard, moved) {
+      const cards = [...listEl.querySelectorAll('.memo-card')];
+      const fromIdx = cards.indexOf(draggingCard);
+      const first = cards[0];
+      const step = (first ? first.getBoundingClientRect().height : 64) + 8;
+      const toIdx = Math.max(0, Math.min(cards.length - 1, fromIdx + moved));
+
+      cards.forEach((c, i) => {
+        if (c === draggingCard) return;
+        c.classList.add('is-shifting');
+        let shift = 0;
+        if (moved < 0 && i >= toIdx && i < fromIdx) shift = step;
+        if (moved > 0 && i > fromIdx && i <= toIdx) shift = -step;
+        c.style.transform = shift ? `translateY(${shift}px)` : '';
+      });
+    }
+    function clearShift() {
+      listEl.querySelectorAll('.memo-card').forEach((c) => {
+        c.classList.remove('is-shifting');
+        c.style.transform = '';
+      });
+    }
+
+    // === 初期化 ===
+    (async () => {
+      try {
+        const user = await requireLogin();
+        setupAvatar(user);
+        labels = await getLabels();
+        await refresh();
+      } catch (err) {
+        if (err.status !== 401) eyegAlert('読み込みエラー', err.message);
+      }
+    })();
+  </script>
+</body>
+</html>

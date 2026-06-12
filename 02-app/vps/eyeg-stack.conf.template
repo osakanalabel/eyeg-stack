@@ -1,0 +1,49 @@
+# eyeg-stack.${BASE_DOMAIN} — VPS フロント nginx 用テンプレート
+# 配置先: ~/nginx/templates/eyeg-stack.conf.template
+# 静的ファイルは ~/nginx/www/eyeg-stack/（= /var/www/html/eyeg-stack）に置く。
+
+server {
+    listen 80;
+    server_name eyeg-stack.${BASE_DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name eyeg-stack.${BASE_DOMAIN};
+
+    ssl_certificate /etc/letsencrypt/live/${BASE_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${BASE_DOMAIN}/privkey.pem;
+
+    # 写真 base64（最大4枚）を見込んだ上限
+    client_max_body_size 12m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy same-origin always;
+
+    location /api/ {
+        proxy_pass http://eyeg-stack-api:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        root /var/www/html/eyeg-stack;
+        index index.html;
+        try_files $uri $uri/ =404;
+    }
+}

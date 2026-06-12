@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#434E56" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="EyeG-Stack" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>EyeG-Stack Login</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="assets/eyeg.css" />
+</head>
+<body class="theme-neutral">
+  <div class="eyeg-app">
+    <header class="eyeg-header">
+      <div>
+        <h1 class="eyeg-title">EyeG-Stack<span class="app-version">v0.1.2</span></h1>
+        <p class="eyeg-subtitle">Login</p>
+      </div>
+    </header>
+
+    <main class="eyeg-main login-main">
+      <form id="login-form" class="eyeg-actions" autocomplete="email">
+        <p class="login-lead">
+          メールアドレスを入力すると、ログイン用リンクをお送りします。<br />
+          初めての方もこのままアカウントが作成されます。
+        </p>
+        <div class="eyeg-field">
+          <label class="eyeg-label" for="email">メールアドレス</label>
+          <input
+            type="email"
+            id="email"
+            class="eyeg-input"
+            placeholder="you@example.com"
+            required
+            autofocus
+            inputmode="email"
+          />
+        </div>
+        <button type="submit" class="eyeg-button eyeg-button--primary" id="send-btn">
+          ログインリンクを送る
+        </button>
+        <p class="login-note" id="login-note"></p>
+      </form>
+    </main>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    const form = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const sendBtn = document.getElementById('send-btn');
+    const note = document.getElementById('login-note');
+
+    // リンク切れ・無効リンクで戻されたときの案内
+    if (new URLSearchParams(window.location.search).get('error') === 'invalid') {
+      note.textContent = 'リンクが無効か期限切れです。もう一度送信してください。';
+    }
+
+    // ログイン済みならメニューへ
+    fetch('/api/auth/me', { credentials: 'same-origin' }).then((res) => {
+      if (res.ok) window.location.href = 'index.html';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      sendBtn.disabled = true;
+      note.textContent = '送信中…';
+      try {
+        await api('/api/auth/request-link', {
+          method: 'POST',
+          body: { email: emailInput.value },
+        });
+        note.textContent = 'メールを送信しました。届いたリンクを開いてください（有効期限15分）。';
+      } catch (err) {
+        note.textContent = err.message;
+        sendBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

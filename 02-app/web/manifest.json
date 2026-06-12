@@ -1,0 +1,14 @@
+{
+  "name": "EyeG-Stack",
+  "short_name": "EyeG-Stack",
+  "description": "さっとメモして、あとで勝手に浮かび上がる",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/check.html",
+  "theme_color": "#0B6985",
+  "background_color": "#053848",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

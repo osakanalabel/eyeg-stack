@@ -1,0 +1,50 @@
+# EyeG-Stack VPS 用 compose（api + db のみ）
+# TLS 終端・静的配信・/api プロキシはすべて VPS のフロント nginx（~/nginx）が担う。
+# nginx 込みの 3 コンテナ構成（../docker-compose.yml）はローカル開発用。
+#
+# 起動: cd ~/eyeg-stack/02-app/vps && docker compose up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: eyeg-stack-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eyeg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD を .env に設定してください}
+      POSTGRES_DB: ${POSTGRES_DB:-eyeg_stack}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eyeg} -d ${POSTGRES_DB:-eyeg_stack}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ../api
+    container_name: eyeg-stack-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-eyeg}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-eyeg_stack}
+      APP_BASE_URL: ${APP_BASE_URL:?APP_BASE_URL を .env に設定してください}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-EyeG-Stack <onboarding@resend.dev>}
+    networks:
+      - proxy    # フロント nginx から eyeg-stack-api:3000 で到達
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    internal: true

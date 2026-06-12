@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B6985" />
+  <title>EyeG-Stack Push</title>
+
+  <style>
+    /*
+     * EyeG 共通スタイル基盤（eyeg-cal/shared/eyeg.css より必要部分を移植）
+     * モック単体で自己完結させるため <style> に取り込む。
+     * カラートークンのみ EyeG-Stack 独自（グリーン系・仮）に上書きする。
+     */
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&display=swap');
+
+    :root {
+      /* EyeG-Stack 独自カラー（仮・青緑系／2Cal寄り）
+       * シリーズ内の差別化: 2Cal=青(#0C447C,hue≈212°) / 4Cal=ティール(#0F6E78,hue≈186°)。
+       * 両者の中間 hue≈195° の青緑に置き、2Cal の青に寄せつつ
+       * どちらにも被らせない。 */
+      --eyeg-bg-light: #0B6985;
+      --eyeg-bg-dark: #053848;
+      --eyeg-accent-light: #84D2E6;
+      --eyeg-accent-mid: #1F9CC4;
+      --eyeg-accent-dark: #136080;
+
+      /* 余白・サイズ基準（シリーズ共通・上書き禁止） */
+      --eyeg-radius: 16px;
+      --eyeg-radius-lg: 24px;
+      --eyeg-tap: 44px;
+      --eyeg-space-xs: 4px;
+      --eyeg-space-sm: 8px;
+      --eyeg-space-md: 16px;
+      --eyeg-space-lg: 24px;
+      --eyeg-space-xl: 40px;
+
+      --eyeg-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+      --eyeg-dur: 180ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; min-height: 100dvh; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      font-weight: 300;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--eyeg-accent-light);
+      background: linear-gradient(180deg, var(--eyeg-bg-light) 0%, var(--eyeg-bg-dark) 100%);
+      background-attachment: fixed;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* レイアウト骨格（シリーズ共通） */
+    .eyeg-app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--eyeg-space-md) var(--eyeg-space-md) var(--eyeg-space-lg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      gap: var(--eyeg-space-sm);
+    }
+
+    .eyeg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--eyeg-space-md);
+    }
+
+    .eyeg-title {
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.3px;
+      color: var(--eyeg-accent-light);
+      margin: 0;
+    }
+
+    .eyeg-subtitle {
+      font-weight: 300;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--eyeg-accent-mid);
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    .eyeg-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-md);
+    }
+
+    .eyeg-actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-sm);
+    }
+
+    /* フォーム部品 */
+    .eyeg-field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-xs);
+    }
+
+    .eyeg-label {
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--eyeg-accent-dark);
+    }
+
+    .eyeg-input, .eyeg-textarea {
+      font-family: inherit;
+      font-weight: 300;
+      font-size: 16px;
+      color: var(--eyeg-accent-light);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+      padding: 12px var(--eyeg-space-md);
+      min-height: var(--eyeg-tap);
+      width: 100%;
+      outline: none;
+      transition: border-color var(--eyeg-dur) var(--eyeg-ease),
+                  background-color var(--eyeg-dur) var(--eyeg-ease);
+    }
+
+    .eyeg-textarea {
+      min-height: calc(var(--eyeg-tap) * 2);
+      resize: vertical;
+    }
+
+    .eyeg-input::placeholder, .eyeg-textarea::placeholder {
+      color: var(--eyeg-accent-dark);
+      opacity: 0.7;
+    }
+
+    .eyeg-input:focus, .eyeg-textarea:focus {
+      border-color: var(--eyeg-accent-mid);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .eyeg-input[type="date"] { -webkit-appearance: none; appearance: none; }
+
+    .eyeg-input--datetime {
+      -webkit-appearance: none;
+      appearance: none;
+      font-family: inherit;
+      min-height: var(--eyeg-tap);
+      color: var(--eyeg-accent-light);
+    }
+
+    .eyeg-input--datetime::-webkit-calendar-picker-indicator {
+      filter: invert(0.7) sepia(0.3) hue-rotate(100deg);
+      cursor: pointer;
+      opacity: 0.8;
+    }
+    .eyeg-input--datetime::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+    /* ボタン */
+    .eyeg-button {
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 1px;
+      min-height: var(--eyeg-tap);
+      padding: 0 var(--eyeg-space-lg);
+      border-radius: var(--eyeg-radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform var(--eyeg-dur) var(--eyeg-ease),
+                  background-color var(--eyeg-dur) var(--eyeg-ease),
+                  opacity var(--eyeg-dur) var(--eyeg-ease);
+    }
+
+    .eyeg-button:active:not(:disabled) { transform: scale(0.97); }
+    .eyeg-button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .eyeg-button--primary {
+      background: var(--eyeg-accent-mid);
+      color: #fff;
+    }
+    .eyeg-button--primary:hover:not(:disabled) {
+      background: var(--eyeg-accent-light);
+      color: var(--eyeg-bg-dark);
+    }
+
+    .eyeg-button--ghost {
+      background: transparent;
+      color: var(--eyeg-accent-mid);
+      border-color: var(--eyeg-accent-dark);
+    }
+    .eyeg-button--ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--eyeg-accent-light);
+    }
+
+    /* アバター（ダミー） */
+    .eyeg-avatar {
+      width: var(--eyeg-tap);
+      height: var(--eyeg-tap);
+      min-width: var(--eyeg-tap);
+      border-radius: 50%;
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--eyeg-accent-dark);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--eyeg-accent-light);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      transition: border-color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .eyeg-avatar:hover { border-color: var(--eyeg-accent-mid); }
+
+    /* 状態表示（GPS ステータス等） */
+    .eyeg-status {
+      font-size: 14px;
+      padding: var(--eyeg-space-md);
+      border-radius: var(--eyeg-radius);
+      border: 1px solid var(--eyeg-accent-dark);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--eyeg-accent-light);
+    }
+
+    /* モーダル（confirm 等。eyeg.css より移植） */
+    .eyeg-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 100;
+      padding: var(--eyeg-space-md);
+    }
+
+    @media (min-width: 600px) {
+      .eyeg-modal-backdrop { align-items: center; }
+    }
+
+    .eyeg-modal {
+      width: 100%;
+      max-width: 480px;
+      max-height: 80dvh;
+      background: var(--eyeg-bg-dark);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .eyeg-modal__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      border-bottom: 1px solid var(--eyeg-accent-dark);
+    }
+
+    .eyeg-modal__title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: var(--eyeg-accent-light);
+      margin: 0;
+    }
+
+    .eyeg-modal__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-md);
+    }
+
+    .eyeg-modal__footer {
+      padding: var(--eyeg-space-md) var(--eyeg-space-lg);
+      border-top: 1px solid var(--eyeg-accent-dark);
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-sm);
+    }
+
+    /* Confirm モーダル固有（本文1段 + 横並び2ボタン） */
+    .eyeg-confirm__body { gap: var(--eyeg-space-sm); }
+
+    .eyeg-confirm__message {
+      font-size: 14px;
+      color: var(--eyeg-accent-light);
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .eyeg-confirm__footer {
+      flex-direction: row;
+      justify-content: flex-end;
+      gap: var(--eyeg-space-sm);
+    }
+    .eyeg-confirm__footer .eyeg-button { flex: 1; }
+
+    @media (min-width: 600px) {
+      .eyeg-confirm__footer .eyeg-button {
+        flex: 0 0 auto;
+        min-width: 120px;
+      }
+    }
+
+    /* 共通フェード（モーダル開閉用） */
+    .eyeg-fade-enter-active,
+    .eyeg-fade-leave-active {
+      transition: opacity var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .eyeg-fade-enter-from,
+    .eyeg-fade-leave-to { opacity: 0; }
+
+    :focus-visible {
+      outline: 2px solid var(--eyeg-accent-light);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    /* ============================================================
+     * EyeG-Stack Push 画面 固有スタイル
+     * ============================================================ */
+
+    /* ヘッダー右側のアクション群（メニュー / Check / アバター） */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--eyeg-space-sm);
+    }
+
+    /* 丸ピル型ナビボタン（EyeG 共通スタイルの .menu-back を流用） */
+    .menu-back {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      min-height: 32px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--eyeg-accent-mid);
+      border: 1px solid var(--eyeg-accent-dark);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .menu-back:hover {
+      color: var(--eyeg-accent-light);
+      border-color: var(--eyeg-accent-mid);
+    }
+    .menu-back--icon {
+      padding: 6px;
+      width: 32px;
+    }
+    .menu-back--sibling {
+      text-transform: none;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* バージョン表記（タイトル右に小さく添える） */
+    .app-version {
+      margin-left: var(--eyeg-space-sm);
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      color: var(--eyeg-accent-light);
+      opacity: 0.75;
+      vertical-align: middle;
+    }
+
+    /* 下部固定 Push ボタンに被らないよう main 末尾に余白 */
+    .push-main { padding-bottom: 96px; }
+
+    /* カテゴリ 3択トグル */
+    .cat-toggle {
+      display: flex;
+      gap: var(--eyeg-space-sm);
+    }
+    .cat-toggle__btn {
+      flex: 1;
+      min-height: var(--eyeg-tap);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--eyeg-accent-light);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+      cursor: pointer;
+      transition: background-color var(--eyeg-dur) var(--eyeg-ease),
+                  border-color var(--eyeg-dur) var(--eyeg-ease),
+                  color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .cat-toggle__btn[aria-pressed="true"] {
+      background: var(--eyeg-accent-mid);
+      border-color: var(--eyeg-accent-mid);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* 詳細トグル */
+    .detail-toggle {
+      align-self: flex-start;
+    }
+
+    .detail-panel {
+      display: flex;
+      flex-direction: column;
+      gap: var(--eyeg-space-md);
+      overflow: hidden;
+    }
+    .detail-panel[hidden] { display: none; }
+
+    /* 重要度スター */
+    .importance {
+      display: flex;
+      gap: var(--eyeg-space-xs);
+    }
+    .importance__star {
+      width: var(--eyeg-tap);
+      height: var(--eyeg-tap);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      line-height: 1;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--eyeg-accent-dark);
+      transition: color var(--eyeg-dur) var(--eyeg-ease),
+                  transform var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .importance__star[aria-pressed="true"] { color: var(--eyeg-accent-light); }
+    .importance__star:active { transform: scale(0.9); }
+
+    /* 写真ダミーグリッド */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--eyeg-space-sm);
+    }
+    .photo-slot {
+      aspect-ratio: 1 / 1;
+      min-height: var(--eyeg-tap);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--eyeg-accent-dark);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed var(--eyeg-accent-dark);
+      border-radius: var(--eyeg-radius);
+      cursor: pointer;
+      transition: border-color var(--eyeg-dur) var(--eyeg-ease),
+                  color var(--eyeg-dur) var(--eyeg-ease);
+    }
+    .photo-slot:hover {
+      border-color: var(--eyeg-accent-mid);
+      color: var(--eyeg-accent-mid);
+    }
+
+    /* GPS ステータス（小さめ） */
+    .gps-status {
+      font-size: 12px;
+      padding: var(--eyeg-space-sm) var(--eyeg-space-md);
+      letter-spacing: 0.5px;
+      color: var(--eyeg-accent-mid);
+      display: flex;
+      align-items: center;
+      gap: var(--eyeg-space-sm);
+    }
+    .gps-status__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--eyeg-accent-mid);
+      animation: gps-pulse 1.4s var(--eyeg-ease) infinite;
+    }
+    @keyframes gps-pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* 下部固定アクション */
+    .push-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--eyeg-space-sm) var(--eyeg-space-md)
+               calc(var(--eyeg-space-md) + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(5, 56, 72, 0) 0%, var(--eyeg-bg-dark) 40%);
+    }
+    .push-actions .eyeg-button { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="eyeg-app push-app">
+    <!-- ヘッダー -->
+    <header class="eyeg-header">
+      <div>
+        <h1 class="eyeg-title">EyeG-Stack<span class="app-version">v0.1.0</span></h1>
+        <p class="eyeg-subtitle">Push</p>
+      </div>
+      <div class="header-actions">
+        <!-- EyeG-Stack メニュー（Push / Check のみに遷移）へ戻る -->
+        <a
+          class="menu-back menu-back--icon"
+          href="index.html"
+          aria-label="EyeG-Stack メニューへ戻る"
+          title="EyeG-Stack メニューへ戻る"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </a>
+        <!-- Check 画面へ（Push の対となる EyeG-Stack 内の閲覧機能） -->
+        <a
+          class="menu-back menu-back--sibling"
+          href="check.html"
+          aria-label="Check へ"
+          title="Check へ"
+        >Check</a>
+        <button class="eyeg-avatar" type="button" aria-label="アカウント">ES</button>
+      </div>
+    </header>
+
+    <!-- メイン入力エリア -->
+    <main class="eyeg-main push-main">
+      <!-- メモ文 -->
+      <div class="eyeg-field">
+        <textarea
+          id="memo-body"
+          class="eyeg-textarea"
+          rows="3"
+          placeholder="メモを入力…"
+          autofocus
+        ></textarea>
+      </div>
+
+      <!-- カテゴリ 3択 -->
+      <div class="eyeg-field">
+        <span class="eyeg-label">カテゴリ</span>
+        <div class="cat-toggle" role="group" aria-label="カテゴリ">
+          <button type="button" class="cat-toggle__btn" data-cat="personal" aria-pressed="true">私用</button>
+          <button type="button" class="cat-toggle__btn" data-cat="work" aria-pressed="false">仕事用</button>
+          <button type="button" class="cat-toggle__btn" data-cat="general" aria-pressed="false">一般</button>
+        </div>
+      </div>
+
+      <!-- 詳細トグル -->
+      <button
+        type="button"
+        class="eyeg-button eyeg-button--ghost detail-toggle"
+        id="detail-toggle"
+        aria-expanded="false"
+        aria-controls="detail-panel"
+      >+ 詳細</button>
+
+      <!-- オプションエリア（折りたたみ） -->
+      <div class="detail-panel" id="detail-panel" hidden>
+        <!-- 重要度 -->
+        <div class="eyeg-field">
+          <span class="eyeg-label">重要度</span>
+          <div class="importance" role="group" aria-label="重要度">
+            <button type="button" class="importance__star" data-value="1" aria-pressed="false" aria-label="重要度 1">★</button>
+            <button type="button" class="importance__star" data-value="2" aria-pressed="false" aria-label="重要度 2">★</button>
+            <button type="button" class="importance__star" data-value="3" aria-pressed="false" aria-label="重要度 3">★</button>
+            <button type="button" class="importance__star" data-value="4" aria-pressed="false" aria-label="重要度 4">★</button>
+            <button type="button" class="importance__star" data-value="5" aria-pressed="false" aria-label="重要度 5">★</button>
+          </div>
+        </div>
+
+        <!-- 期限 -->
+        <div class="eyeg-field">
+          <label class="eyeg-label" for="due-date">期限</label>
+          <input type="date" id="due-date" class="eyeg-input eyeg-input--datetime" />
+        </div>
+
+        <!-- 写真（ダミー） -->
+        <div class="eyeg-field">
+          <span class="eyeg-label">写真（最大4枚）</span>
+          <div class="photo-grid">
+            <button type="button" class="photo-slot" aria-label="写真を追加">＋</button>
+            <button type="button" class="photo-slot" aria-label="写真を追加">＋</button>
+            <button type="button" class="photo-slot" aria-label="写真を追加">＋</button>
+            <button type="button" class="photo-slot" aria-label="写真を追加">＋</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS ステータス -->
+      <div class="gps-status" id="gps-status">
+        <span class="gps-status__dot"></span>
+        <span id="gps-text">GPS取得中…</span>
+      </div>
+    </main>
+
+    <!-- 下部固定アクション -->
+    <div class="eyeg-actions push-actions">
+      <button type="button" class="eyeg-button eyeg-button--primary" id="push-btn">Push</button>
+    </div>
+  </div>
+
+  <script>
+    // === カテゴリ トグル（単一選択） ===
+    const catButtons = document.querySelectorAll('.cat-toggle__btn');
+    let selectedCategory = 'personal';
+    catButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        catButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+        selectedCategory = btn.dataset.cat;
+      });
+    });
+
+    // === 詳細パネル 開閉 ===
+    const detailToggle = document.getElementById('detail-toggle');
+    const detailPanel = document.getElementById('detail-panel');
+    detailToggle.addEventListener('click', () => {
+      const open = detailPanel.hasAttribute('hidden');
+      if (open) {
+        detailPanel.removeAttribute('hidden');
+      } else {
+        detailPanel.setAttribute('hidden', '');
+      }
+      detailToggle.setAttribute('aria-expanded', String(open));
+      detailToggle.textContent = open ? '− 詳細' : '+ 詳細';
+    });
+
+    // === 重要度スター（クリックした値まで点灯。同じ値で解除） ===
+    const stars = document.querySelectorAll('.importance__star');
+    let importance = null;
+    function renderStars() {
+      stars.forEach((s) => {
+        const v = Number(s.dataset.value);
+        s.setAttribute('aria-pressed', String(importance !== null && v <= importance));
+      });
+    }
+    stars.forEach((star) => {
+      star.addEventListener('click', () => {
+        const v = Number(star.dataset.value);
+        importance = importance === v ? null : v;
+        renderStars();
+      });
+    });
+
+    // === 写真スロット（モック：ダミーフィードバック） ===
+    document.querySelectorAll('.photo-slot').forEach((slot) => {
+      slot.addEventListener('click', () => {
+        alert('写真の追加（モックのためダミー）');
+      });
+    });
+
+    // === GPS（バックグラウンド取得想定。モックでステータスのみ更新） ===
+    const gpsText = document.getElementById('gps-text');
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          gpsText.textContent =
+            `GPS取得済み（${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}）`;
+          document.querySelector('.gps-status__dot').style.animation = 'none';
+        },
+        () => { gpsText.textContent = 'GPS取得できませんでした'; },
+        { enableHighAccuracy: false, timeout: 8000 }
+      );
+    } else {
+      gpsText.textContent = 'GPS非対応';
+    }
+
+    // === 独自 confirm モーダル（EyeG 共通の confirm を移植） ===
+    // alert/confirm を使わず、テーマに揃ったモーダルで確認を取る。
+    // Promise を返し、確定で true / 取消・閉じる・Esc で false。
+    function eyegConfirm(opts) {
+      return new Promise((resolve) => {
+        const title = opts.title || '確認';
+        const message = opts.message || '';
+        const confirmLabel = opts.confirmLabel || 'OK';
+        const cancelLabel = opts.cancelLabel || 'キャンセル';
+        const danger = !!opts.danger;
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'eyeg-modal-backdrop';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+
+        const modal = document.createElement('div');
+        modal.className = 'eyeg-modal eyeg-confirm';
+
+        const header = document.createElement('div');
+        header.className = 'eyeg-modal__header';
+        const h2 = document.createElement('h2');
+        h2.className = 'eyeg-modal__title';
+        h2.textContent = title;
+        header.appendChild(h2);
+
+        const body = document.createElement('div');
+        body.className = 'eyeg-modal__body eyeg-confirm__body';
+        if (message) {
+          const p = document.createElement('p');
+          p.className = 'eyeg-confirm__message';
+          p.textContent = message;
+          body.appendChild(p);
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'eyeg-modal__footer eyeg-confirm__footer';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'eyeg-button eyeg-button--ghost';
+        cancelBtn.textContent = cancelLabel;
+
+        const okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'eyeg-button ' + (danger ? 'eyeg-button--danger' : 'eyeg-button--primary');
+        okBtn.textContent = confirmLabel;
+
+        footer.appendChild(cancelBtn);
+        footer.appendChild(okBtn);
+        modal.appendChild(header);
+        modal.appendChild(body);
+        modal.appendChild(footer);
+        backdrop.appendChild(modal);
+
+        function cleanup(result) {
+          backdrop.removeEventListener('click', onBackdropClick);
+          document.removeEventListener('keydown', onKey);
+          if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+          resolve(result);
+        }
+        function onBackdropClick(e) {
+          if (e.target === backdrop) cleanup(false);
+        }
+        function onKey(e) {
+          if (e.key === 'Escape') cleanup(false);
+          if (e.key === 'Enter') cleanup(true);
+        }
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        okBtn.addEventListener('click', () => cleanup(true));
+        backdrop.addEventListener('click', onBackdropClick);
+        document.addEventListener('keydown', onKey);
+
+        document.body.appendChild(backdrop);
+        okBtn.focus();
+      });
+    }
+
+    // === Push（モック：独自 confirm で確認。メモ空でも送信可） ===
+    const CATEGORY_LABELS = { personal: '私用', work: '仕事用', general: '一般' };
+
+    document.getElementById('push-btn').addEventListener('click', async () => {
+      const body = document.getElementById('memo-body').value;
+      const due = document.getElementById('due-date').value;
+
+      const summary =
+        `カテゴリ: ${CATEGORY_LABELS[selectedCategory]}\n` +
+        `重要度: ${importance ?? '未設定'}\n` +
+        `期限: ${due || '未設定'}\n` +
+        `メモ: ${body.trim() || '（空）'}`;
+
+      const ok = await eyegConfirm({
+        title: 'このメモを Push しますか？',
+        message: summary,
+        confirmLabel: 'Push',
+        cancelLabel: 'キャンセル',
+      });
+
+      if (ok) {
+        // モックのため送信処理は行わず、確定したことだけ確認モーダルで知らせる
+        await eyegConfirm({
+          title: 'Push しました（モック）',
+          message: '実際の保存処理は未実装です。',
+          confirmLabel: 'OK',
+          cancelLabel: '閉じる',
+        });
+      }
+    });
+  </script>
+</body>
+</html>

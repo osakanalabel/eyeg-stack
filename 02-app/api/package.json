@@ -1,0 +1,19 @@
+{
+  "name": "eyeg-stack-api",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "pg": "^8.13.1"
+  }
+}

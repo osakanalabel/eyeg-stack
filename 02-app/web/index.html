@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#434E56" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="EyeG-Stack" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>EyeG-Stack</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="assets/eyeg.css" />
+</head>
+<body class="theme-neutral">
+  <div class="eyeg-app">
+    <header class="eyeg-header">
+      <div>
+        <h1 class="eyeg-title">EyeG-Stack<span class="app-version">v0.1.2</span></h1>
+        <p class="eyeg-subtitle">Menu</p>
+      </div>
+      <div class="header-actions">
+        <button class="eyeg-avatar" type="button" aria-label="ログアウト" title="ログアウト">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="eyeg-main menu-main">
+      <a class="menu-card" href="push.html">
+        <span class="menu-card__name">Push</span>
+        <span class="menu-card__desc">メモをスタックに積む</span>
+      </a>
+      <a class="menu-card" href="check.html">
+        <span class="menu-card__name">Check</span>
+        <span class="menu-card__desc">スタックを確認する — 重要なメモが浮かび上がる</span>
+      </a>
+    </main>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireLogin().then(setupAvatar).catch(() => {});
+  </script>
+</body>
+</html>
