@@ -142,10 +142,17 @@ category) are also offered, but weighting is the headline UX.
 - **Mock layout is flat under `01-mock/`**: `index.html` (menu) / `push.html` /
   `check.html`. They navigate via relative hrefs (menu ↔ push ↔ check). Keep
   navigation inside EyeG-Stack — there is **no** cross-app link to eyeg-cal.
-- Theme color is unique to EyeG-Stack and still TBD. Provisional value is a
-  blue-green (viridian) set, chosen to sit between 2Cal (blue) and 4Cal (teal)
-  without colliding — `--eyeg-bg-light: #0B6985`, `--eyeg-accent-mid: #1F9CC4`.
-  Override the 5 `:root` tokens once the real color lands.
+- Theme colors are per-page `body` classes overriding the 5 `:root` tokens:
+  `.theme-neutral` (gray — login / index), `.theme-push` (blue-leaning),
+  `.theme-check` (teal/emerald-leaning). The base viridian set
+  (`--eyeg-bg-light: #0B6985`, `--eyeg-accent-mid: #1F9CC4`) remains the
+  default fallback.
+- Header navigation is icon-only (`.menu-back--icon`): a grid icon to the menu,
+  a sibling-page icon (Check shows ＋ → Push; Push shows a list icon → Check),
+  and a door-arrow logout button. Check additionally has a ＋ FAB (bottom
+  right) as the primary route to Push. No text links in the header.
+- The weighted default Check tab is labeled **「フロート」** (internal sort key
+  stays `recommended`).
 - Push screen UX: input-ready on open, primary fields (memo text + category)
   large and always visible; rarely-used fields (importance, due date, photos)
   hidden behind a "+ details" expander; GPS acquired in the background (no UI

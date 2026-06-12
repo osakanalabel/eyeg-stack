@@ -305,12 +305,6 @@ body {
   padding: 6px;
   width: 32px;
 }
-.menu-back--sibling {
-  text-transform: none;
-  letter-spacing: 0.5px;
-  font-weight: 700;
-  font-size: 12px;
-}
 
 .app-version {
   margin-left: var(--eyeg-space-sm);
