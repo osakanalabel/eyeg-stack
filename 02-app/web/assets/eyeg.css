@@ -254,15 +254,16 @@ body {
  * アバター / ナビ
  * ============================================================ */
 .eyeg-avatar {
-  width: var(--eyeg-tap);
-  height: var(--eyeg-tap);
-  min-width: var(--eyeg-tap);
+  /* ログアウトはほぼ使われない導線なので小さく・地味に */
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border-radius: 50%;
   overflow: hidden;
   padding: 0;
-  border: 1px solid var(--eyeg-accent-dark);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--eyeg-accent-light);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--eyeg-accent-dark);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -304,6 +305,14 @@ body {
 .menu-back--icon {
   padding: 6px;
   width: 32px;
+}
+/* 兄弟画面への遷移（Push⇔Check）— 主要導線として大きく・明るく */
+.menu-back--primary {
+  width: 40px;
+  min-height: 40px;
+  color: var(--eyeg-accent-light);
+  border-color: var(--eyeg-accent-mid);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .app-version {
