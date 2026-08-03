@@ -16,11 +16,13 @@ async function api(path, { method = 'GET', body } = {}) {
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  if (res.status === 401) {
+  // コード検証の 401（コード誤り・期限切れ）はリダイレクトせず、呼び出し側で
+  // メッセージ表示させる。それ以外の 401（セッション切れ等）はログインへ。
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/api/auth/verify-code') {
     window.location.href = 'login.html';
     throw new ApiError(401, 'ログインが必要です');
   }
-  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, data.error || `エラー (${res.status})`);
   return data;
 }
@@ -30,6 +32,18 @@ async function requireLogin() {
   const { user } = await api('/api/auth/me');
   return user;
 }
+
+// ヘッダーのスーパーリロードボタン（キャッシュを無視して強制再取得）を配線する
+function setupReload() {
+  const btn = document.querySelector('.reload-btn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('_r', Date.now());
+    window.location.replace(url.toString());
+  });
+}
+setupReload();
 
 // ヘッダー右上のログアウトボタン（アイコンは HTML 側に埋め込み済み）を配線する
 function setupAvatar(user) {

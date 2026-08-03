@@ -307,6 +307,10 @@ body {
   padding: 6px;
   width: 32px;
 }
+.reload-btn {
+  background: transparent;
+  font-family: inherit;
+}
 /* 兄弟画面への遷移（Push⇔Check）— 主要導線として大きく・明るく */
 .menu-back--primary {
   width: 40px;
@@ -935,4 +939,14 @@ button.detail-photo {
   font-size: 12px;
   color: var(--eyeg-accent-mid);
   margin: 0;
+}
+/* 6桁コード入力: 大きく・等幅・字間広めで読み取りやすく */
+.login-code-input {
+  font-size: 28px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.login-code-input::placeholder {
+  letter-spacing: 8px;
 }

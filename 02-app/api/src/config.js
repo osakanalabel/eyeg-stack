@@ -6,14 +6,16 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL
     || 'postgres://eyeg:eyeg@localhost:5432/eyeg_stack',
 
-  // マジックリンクの組み立てに使う公開URL（末尾スラッシュなし）
+  // アプリの公開URL（末尾スラッシュなし）。メール文面の案内等に使う
   appBaseUrl: (process.env.APP_BASE_URL || 'http://localhost:8080').replace(/\/+$/, ''),
 
-  // Resend。キー未設定時は送信せずサーバログにリンクを出す（開発用フォールバック）
+  // Resend。キー未設定時は送信せずサーバログにコードを出す（開発用フォールバック）
   resendApiKey: process.env.RESEND_API_KEY || '',
   mailFrom: process.env.MAIL_FROM || 'EyeG-Stack <onboarding@resend.dev>',
 
-  loginTokenTtlMin: Number(process.env.LOGIN_TOKEN_TTL_MIN || 15),
+  // ログインコード（6桁）: 有効期限・1コードあたりの試行上限
+  loginCodeTtlMin: Number(process.env.LOGIN_CODE_TTL_MIN || 10),
+  loginCodeMaxAttempts: Number(process.env.LOGIN_CODE_MAX_ATTEMPTS || 5),
   sessionTtlDays: Number(process.env.SESSION_TTL_DAYS || 30),
 
   // nginx を介さずローカルで動かすとき web/ を直接配信する

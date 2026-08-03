@@ -1,10 +1,10 @@
 import { config } from './config.js';
 
-// Resend (https://resend.com) でマジックリンクを送る。
+// Resend (https://resend.com) でログインコード（6桁）を送る。
 // API キー未設定時は送信せずログに出す（ローカル開発用フォールバック）。
-export async function sendLoginLink(email, url) {
+export async function sendLoginCode(email, code) {
   if (!config.resendApiKey) {
-    console.log(`[mailer] RESEND_API_KEY 未設定のためログ出力のみ: ${email} -> ${url}`);
+    console.log(`[mailer] RESEND_API_KEY 未設定のためログ出力のみ: ${email} -> コード ${code}`);
     return;
   }
 
@@ -17,13 +17,14 @@ export async function sendLoginLink(email, url) {
     body: JSON.stringify({
       from: config.mailFrom,
       to: [email],
-      subject: 'EyeG-Stack ログインリンク',
+      subject: `EyeG-Stack ログインコード ${code}`,
       text: [
-        'EyeG-Stack へのログインリンクです。',
+        'EyeG-Stack のログインコードです。',
         '',
-        url,
+        `    ${code}`,
         '',
-        `このリンクは ${config.loginTokenTtlMin} 分間有効で、1回だけ使えます。`,
+        `このコードは ${config.loginCodeTtlMin} 分間有効で、1回だけ使えます。`,
+        'アプリの画面に入力してください。',
         '心当たりがない場合はこのメールを無視してください。',
       ].join('\n'),
     }),

@@ -18,16 +18,21 @@ CREATE TABLE users (
 -- 認証モジュール所有（他モジュールは users.id FK のみで連携）
 -- ============================================================
 
--- マジックリンクのワンタイムトークン。
+-- ログイン用ワンタイムコード（6桁）。
 -- ユーザー作成は verify 成功時（未確認メールのゴミユーザーを作らない）。
-CREATE TABLE auth_login_tokens (
+-- code_hash は email と対で照合する（6桁と短いためコード単独では列挙を許さない）。
+-- attempts で総当りを抑止し、上限超過で該当行を無効化する。
+CREATE TABLE auth_login_codes (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email      VARCHAR(255) NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
+  code_hash  TEXT NOT NULL,
+  attempts   SMALLINT NOT NULL DEFAULT 0,
   expires_at TIMESTAMPTZ NOT NULL,
   used_at    TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_auth_login_codes_email ON auth_login_codes (email);
 
 CREATE TABLE auth_sessions (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
