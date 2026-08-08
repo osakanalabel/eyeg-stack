@@ -1,0 +1,1 @@
+    requireLogin().then(setupAvatar).catch(() => {});
