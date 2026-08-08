@@ -52,12 +52,40 @@ Features split into two groups, framed as **effect (作用) / output (出力)**,
 
 Use this as the rule when deciding where a feature belongs.
 
-- Edit/delete are NOT placed in Check; they navigate to the Push screen (edit
-  mode, `push.html?id=`). Sister app eyeg-cal follows the same "navigate away to
-  delete" convention.
+- **Edit** is NOT placed in Check; it navigates to the Push screen (edit mode,
+  `push.html?id=`). Sister app eyeg-cal follows the same "navigate away to edit"
+  convention.
+- **Delete** is reachable from Check's detail modal (decided 2026-08-08 —
+  see below), but only through an explicit `eyegConfirm()` step.
 - **Exception**: Check's manual reordering (`manual_up_count` /
   `manual_down_count`) technically mutates counts, but counts as "tuning the
   output" and stays on the Check side.
+
+### 決定: Check 詳細モーダルからの削除 (2026-08-08)
+
+Push 画面へ遷移してから削除する導線が重い、という課題への結論。**採用**: Check
+のメモをタップして開く詳細モーダルのフッタに、編集ボタンと並べてゴミ箱アイコンを
+置く。押すと `eyegConfirm()` で確定し、その場で `DELETE /api/memos/:id` → モーダ
+ルを閉じて一覧を再取得する。リストカードのレイアウトは変更しない。
+
+位置づけの整理: **詳細モーダルは出力 (Check) の延長であり、そこから編集 (Push へ
+遷移) と削除 (確定モーダル) が分岐する。** タップという明示的な一段を経ているため
+誤爆リスクが低く、破壊操作は必ず確認を挟む、という effect/output 分離の本来の狙い
+は保たれる。
+
+実装上の必須事項:
+
+- アイコン・確認文言・`danger: true` は `push.html` の `#delete-btn` と**完全に
+  揃える** (ゴミ箱アイコン + 「削除すると元に戻せません。」)。同じ操作が画面ごとに
+  違う見た目になるのを防ぐ。
+- `memos` に `deleted_at` は無く API も物理 DELETE (`memo_photos` は FK CASCADE)。
+  **取り消しは効かない。**
+
+非採用: カードのスワイプ削除。理由は上記の物理削除 (Undo が無い状態で誤爆が即・
+不可逆) と、カードが既に長押し→ドラッグ並べ替えにポインタジェスチャを使っており
+軸判定が衝突するため。将来スワイプを入れるなら、先に論理削除 + Undo が要る。
+その他の非採用案: 長押しでの複数選択一括削除 (メモ数が増えてから追加するのが自
+然)、リストカード上のオーバーフローメニュー。
 
 ## Vocabulary
 
@@ -74,17 +102,20 @@ Push and Check must not be mixed — keep to the effect / output split above.
 00-docs/
   core.md              # Core concept — source of truth for design decisions
   draft/               # Early notes: concept, naming, data model
-  cowork2code/         # Instructions from Cowork to Code (implementation specs)
-  code2cowork/         # Feedback from Code to Cowork
+  cowork2code/         # 過去の指示書アーカイブ（現在は運用していない）
+  code2cowork/         # 過去のフィードバックのアーカイブ（同上）
 01-mock/               # HTML mockups (no API; look & UX validation only)
 02-app/                # The application (api / web / nginx / db / compose)
 ```
 
-Implementation instructions arrive in `00-docs/cowork2code/` (filenames are
-date-prefixed, e.g. `20260609-01_push-screen-mock.md`). Read the relevant spec
-before building. Write feedback to `00-docs/code2cowork/` using the **same
-filename** as the spec it responds to; follow eyeg-cal's feedback format
-(指示通り / 指示外の追加判断 / 申し送り sections).
+開発はかきざきさんと Claude Code の対話のみで進める（2026-08-08 方針変更）。
+**指示書 / フィードバックのやり取りは、明示的に指示されたときだけ書く。**
+`cowork2code/` `code2cowork/` は過去分のアーカイブであり、通常の作業で新規
+ファイルを追加する必要はない。
+
+そのぶん、**対話で決めたことのうち後から効くものは `CLAUDE.md` と
+`00-docs/core.md` に直接反映する**。とくに、規約を変える決定・採用しなかった案と
+その理由・実装上の制約は、やり取りが流れると失われるのでドキュメント側に残すこと。
 
 When a design decision is ambiguous, `00-docs/core.md` is authoritative.
 
