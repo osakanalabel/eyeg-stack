@@ -30,6 +30,8 @@ async function api(path, { method = 'GET', body } = {}) {
 // ログイン必須ページの入口で呼ぶ。未ログインなら login.html へ飛ぶ。
 async function requireLogin() {
   const { user } = await api('/api/auth/me');
+  // 認証が確定してはじめて中身を見せる（未ログイン時のちらつき防止・eyeg.css）
+  document.body.classList.remove('auth-pending');
   return user;
 }
 

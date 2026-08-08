@@ -63,6 +63,14 @@ body.theme-check {
 /* hidden 属性を display 指定持ちの要素（.icon-btn 等）でも確実に効かせる */
 [hidden] { display: none !important; }
 
+/* 認証が確定するまでアプリ本体を隠す。
+   HTML は静的配信なので、未ログインでもページ自体は返る。何もしないと
+   /api/auth/me の往復が終わって login.html へ飛ぶまでの数百ミリ秒、
+   ログイン済みの画面がそのまま見えてしまう。
+   requireLogin() の成功時に auth-pending を外す（assets/app.js）。 */
+body.auth-pending .eyeg-app,
+body.auth-pending .fab { visibility: hidden; }
+
 /* ページ間遷移をクロスフェードに（Safari 18.2+ / Chrome 126+。非対応は無視される） */
 @view-transition { navigation: auto; }
 
